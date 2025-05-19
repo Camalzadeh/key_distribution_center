@@ -57,13 +57,13 @@ These can be mixed and used dynamically depending on user choice.
 
 ### 1. Clone the Project
 ```bash
-git clone https://github.com/yourusername/wecrypt.git
-cd wecrypt
+git clone https://github.com/Camalzadeh/key_distribution_center.git
+cd key-distribution-center
 ```
 Update it with your PostgreSQL credentials:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/wecrypt_db
+spring.datasource.url=jdbc:postgresql://localhost:5432/kdc
 spring.datasource.username=postgres
 spring.datasource.password=your_password
 spring.jpa.hibernate.ddl-auto=update

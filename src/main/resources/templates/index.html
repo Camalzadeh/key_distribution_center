@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('WeCrypt')"></head>
+<body>
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('WeCrypt')}"></head>
+<body>
+
+<div class="wrapper">
+
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <div class="main">
+
+        <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+        <div class="container mt-7 text-center">
+            <h1 class="display-7 text-primary">Key Distribution Center & Messenger & Encryptor & Decryptor</h1>
+            <p class="lead">Secure communication with WeCrypt</p>
+
+            <div th:if="${currentUser != null}" class="mt-5 text-start">
+                <h4 class="text-success">🔐 Your RSA Key Pair:</h4>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">🛡️ Public Key:</label>
+                    <pre class="bg-light p-3 rounded border" th:text="${currentUser.publicKey}"></pre>
+                </div>
+
+                <div>
+                    <label class="form-label fw-semibold text-danger">🔒 Private Key:</label>
+                    <pre class="bg-light p-3 rounded border text-danger" th:text="${currentUser.privateKey}"></pre>
+                </div>
+            </div>
+
+            <footer class="mt-5 text-center">
+                <small>WeCrypt | Humbat Jamalov, Asim Gasimov, Yunis Kangarli</small>
+            </footer>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>

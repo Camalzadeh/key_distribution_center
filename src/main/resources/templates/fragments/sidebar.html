@@ -1,0 +1,13 @@
+<nav id="sidebar" class="sidebar" th:fragment="sidebar">
+    <div class="toggle-area">
+        <button id="sidebarToggle" class="btn btn-outline-light btn-sm">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <ul class="nav flex-column mt-3">
+        <li><a th:href="@{/inbox}" class="nav-link"><i class="fas fa-inbox me-2"></i><span class="link-text">Inbox</span></a></li>
+        <li><a th:href="@{/message}" class="nav-link"><i class="fas fa-paper-plane me-2"></i><span class="link-text">Send</span></a></li>
+        <li><a th:href="@{/encrypt}" class="nav-link"><i class="fas fa-lock me-2"></i><span class="link-text">Encrypt</span></a></li>
+        <li><a th:href="@{/decrypt}" class="nav-link"><i class="fas fa-unlock me-2"></i><span class="link-text">Decrypt</span></a></li>
+    </ul>
+</nav>

@@ -1,0 +1,17 @@
+<nav class="navbar navbar-expand-lg navbar-light navbar-custom mb-4" th:fragment="navbar">
+  <div class="container-fluid">
+    <a id="brandTitle" class="navbar-brand" href="/">WeCrypt</a>
+    <div class="d-flex ms-auto align-items-center">
+      <button id="themeToggle" class="theme-toggle-btn me-3" title="Toggle Theme">🌙</button>
+
+      <div th:if="${currentUser != null}" class="d-flex align-items-center">
+        <span class="me-3 text-primary fw-semibold" th:text="'👤 ' + ${currentUser.username}"></span>
+        <a th:href="@{/auth/logout}" class="btn btn-outline-danger">Logout</a>
+      </div>
+
+      <div th:if="${currentUser == null}">
+        <a th:href="@{/auth}" class="btn btn-outline-success">Login/Register</a>
+      </div>
+    </div>
+  </div>
+</nav>

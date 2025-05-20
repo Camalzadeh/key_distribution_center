@@ -1,6 +1,5 @@
 package bee01.humbat.keydistributioncenter.controllers;
 
-
 import bee01.humbat.keydistributioncenter.dtos.UserDTO;
 import bee01.humbat.keydistributioncenter.entities.Session;
 import bee01.humbat.keydistributioncenter.entities.User;
@@ -57,8 +56,7 @@ public class AuthController {
 
     @PostMapping("/submit")
     @ResponseBody
-    public ResponseEntity<?> submit(@RequestBody UserDTO userDTO,
-                                    HttpServletResponse response) {
+    public ResponseEntity<?> submit(@RequestBody UserDTO userDTO, HttpServletResponse response) {
 
         Optional<User> existingUser = Optional.ofNullable(userService.findByUsername(userDTO.username()));
 

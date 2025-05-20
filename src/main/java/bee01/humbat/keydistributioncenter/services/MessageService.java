@@ -83,7 +83,6 @@ public class MessageService {
         logger.info("Text encrypted with symmetric algorithm");
 
 
-
         message.setSender(from);
         message.setReceiver(to);
         message.setEncryptedSymmetricKey(encryptedKey);
@@ -109,13 +108,11 @@ public class MessageService {
         AsymmetricKey privateKey = new AsymmetricKey(receiver.getPrivateKey());
         logger.info("Private key of receiver loaded");
 
-        // 1. RSA ilə açarı deşifrə et
         RsaCipher rsaCipher = new RsaCipher(privateKey);
         CryptEngine<RsaCipher> keyEngine = new CryptEngine<>(rsaCipher);
         String rawSymmetricKey = keyEngine.decrypt(encryptedSymmetricKey);
         logger.info("Decrypted symmetric key: " + rawSymmetricKey);
 
-        // 2. Algoritm və modeni qur
         Algorithm algo = Algorithm.getAlgorithm(algoName);
         Mode mode = Mode.getMode(modeName);
         Key key = Key.giveKey(rawSymmetricKey, algo);
@@ -124,12 +121,10 @@ public class MessageService {
         ModePojo modePojo = new ModePojo(mode);
         ConfigPojo config = new ConfigPojo(keyPojo, modePojo);
 
-        // 3. Mesajı decrypt et
         CryptEngine<?> textEngine = new CryptEngine<>(config);
         String plainText = textEngine.decrypt(encryptedText);
         logger.info("Decrypted text: " + plainText);
 
-        // 4. DTO qaytar
         return new DecryptedMessageDTO(
                 message,
                 plainText,
@@ -138,14 +133,15 @@ public class MessageService {
     }
 
 
-
     public void sendMessage(MessageDTO dto) {
         Message message = toMessage(dto);
         repo.save(message);
     }
+
     public List<DecryptedMessageDTO> findByReceiver(User receiver) {
         return repo.findByReceiver(receiver).stream().map(this::toDecryptedMessageDTO).toList();
     }
+
     public List<DecryptedMessageDTO> findBySender(User sender) {
         return repo.findBySender(sender).stream().map(this::toDecryptedMessageDTO).toList();
     }

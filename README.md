@@ -1,195 +1,89 @@
-# WeCrypt 🔐
+<div align="center">
 
-> Developed by: **Humbat Jamalov**, **Asim Gasimov**, **Yunis Kangarli**
-
-> UFAZ Cryptography Project – 2025
-
-
-**WeCrypt** is a secure end-to-end encryption web application built with **Spring Boot (Maven)** and **PostgreSQL**. It features a custom cryptography module and allows users to communicate securely using various encryption algorithms and block cipher modes. Passwords, messages, and session data are all encrypted using our own implementations.
-
----
-## 📋 Requirements
-- Java 17+
-- Maven
-- PostgreSQL
----
-
-## 🧠 App Summary
-
-The app has three main entities:
-- `User` – stores user info and RSA keys
-- `Message` – stores sent/received messages and encryption metadata
-- `Session` – stores user login sessions (valid for 12 hours)
-
-Every password is encrypted with **RSA** before being stored.
-
-Messages are encrypted using:
-- **A chosen algorithm** (e.g., Vigenère, Playfair, etc.)
-- **A selected block cipher mode** (e.g., CBC, OFB, etc.)
-- **A user-provided key**, which is itself encrypted using the **recipient's public RSA key**
+# 🔐 WeCrypt
+### Next-Generation Key Distribution & Secure Messaging System
+[![Java](https://img.shields.io/badge/Java-17%2B-orange?style=for-the-badge&logo=java)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.5-green?style=for-the-badge&logo=springboot)](https://spring.io/projects/spring-boot)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://www.docker.com/)
 
 ---
 
-## 🔐 Cryptography Module
+**WeCrypt** is a sophisticated end-to-end encrypted messaging platform designed with a focus on cryptographic integrity and modern user experience. Built on a robust **Spring Boot** architecture, it implements a custom **Key Distribution Center (KDC)** logic and a variety of symmetric/asymmetric encryption standards.
 
-All encryption/decryption logic is custom-built inside the `cryptography` package.
+[**Explore Documentation**](docs/guide.md) • [**Deploy to Render**](docs/guide.md#deployment-to-render)
 
-### Symmetric Algorithms
-- **Caesar Cipher**
-- **Vigenère Cipher**
-- **Playfair Cipher**
-- **Rail Fence Cipher**
+</div>
 
-### Asymmetric Algorithm
-- **RSA**
+## ✨ Core Features
 
-### Block Cipher Modes (available for supported algorithms)
-- **ECB** – Electronic Codebook
-- **CBC** – Cipher Block Chaining
-- **CFB** – Cipher Feedback
-- **OFB** – Output Feedback
-
-These can be mixed and used dynamically depending on user choice.
+- **🛡️ Custom Cryptography Engine**: In-depth implementation of classical and modern ciphers.
+- **🔐 RSA Key Management**: Automatic asymmetric keypair generation for every user.
+- **⛓️ Multiple Block Modes**: Support for ECB, CBC, CFB, and OFB operation modes.
+- **📤 Secure Envelope Messaging**: Messages are encrypted with symmetric keys, which are then vaulted using RSA.
+- **🎨 Premium UI**: Modern glassmorphism design with seamless Dark/Light mode transitions.
+- **🚀 Cloud Native**: Fully Dockerized and optimized for high-performance deployment.
 
 ---
 
-## ⚙️ Configuration & Setup
+## 🧠 Cryptographic Blueprint
 
-### 1. Clone the Project
+WeCrypt utilizes a multi-layered security approach:
+
+### 1. Symmetric Algorithms
+| Algorithm | Type | Description |
+| :--- | :--- | :--- |
+| **Caesar** | Substitution | Classic shift cipher with block mode support. |
+| **Vigenère** | Polyalphabetic | Advanced polyalphabetic substitution. |
+| **Playfair** | Digraph | Symmetric encryption using a 5x5 matrix. |
+| **Rail Fence** | Transposition | Geometric transposition cipher. |
+
+### 2. Block Cipher Modes
+Enhance security by choosing how data blocks are processed:
+- **ECB**: Electronic Codebook (Standard)
+- **CBC**: Cipher Block Chaining (Recommended)
+- **CFB**: Cipher Feedback
+- **OFB**: Output Feedback
+
+---
+
+## 🛠️ Quick Start
+
+### 🐳 Run with Docker (Recommended)
+Launch the entire stack (App + PostgreSQL) instantly:
 ```bash
-git clone https://github.com/Camalzadeh/key_distribution_center.git
-cd key-distribution-center
+docker-compose up --build
 ```
-Update it with your PostgreSQL credentials:
+Access the dashboard at: `http://localhost:8080`
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/kdc
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-spring.jpa.hibernate.ddl-auto=update
-```
-### 2. Build & Run
-
+### 💻 Local Development
+1. Ensure you have **Java 17** and **Maven** installed.
+2. Setup a PostgreSQL database named `kdc`.
+3. Run the application:
 ```bash
-mvn clean install
-mvn spring-boot:run
-```
-
-```plaintext
-http://localhost:8080
-```
-
-## ✉️ Messaging System
-
-### 📤 Sending Messages
-
-- User selects a **recipient** from the list
-- Chooses:
-    - **Encryption algorithm** (e.g., Playfair, Vigenère, Caesar, etc.)
-    - **Block cipher mode** (e.g., CBC, CFB, OFB, ECB)
-    - **Secret key** (user-defined string)
-- The system performs:
-    - Encrypts the message using the selected **algorithm + block mode + secret key**
-    - Encrypts the **secret key** using the **recipient’s RSA public key**
-    - Sends the encrypted message + encrypted key to the recipient
-
-### 📥 Inbox Page
-
-- Users can view:
-    - **Messages they received**
-    - **Messages they sent**
-- For each message, the following details are visible:
-    - Encrypted message text
-    - Decrypted (plain) message text
-    - Encrypted key used and its decrypted version
-    - Encryption **algorithm** and **block mode**
-    - **Timestamp** (when it was sent)
-    - **Sender** and **receiver** usernames
-    - **Public/Private key info**:
-        - For received messages → your own keys are shown
-        - For sent messages → recipient’s public key is shown
-
----
-## 🔧 Tools Page
-### 🛠️ Encrypt & Decrypt Tool
-
-- Enter any plain text you want to encrypt or decrypt
-- Select:
-    - Encryption algorithm (e.g., Vigenère, Playfair, Caesar, etc.)
-    - Block cipher mode (e.g., ECB, CBC, CFB, OFB)
-    - Secret key to use for encryption/decryption
-- The app will return the encrypted or decrypted version of the text instantly
-
-### 🔑 Key Viewer
-
-- In the main dashboard, each user can view their:
-    - **Public RSA Key**
-    - **Private RSA Key**
-- These are used for secure communication and encrypted key transfer
-
----
-
-## 🧱 Project Structure
-
-```plaintext
-src/
-└── main/
-├── java/
-│ └── bee01.humbat.keydistributioncenter/
-│ ├── advices/ # Global model advice handlers
-│ ├── controllers/ # Web layer controllers
-│ ├── cryptography/ # Custom crypto module
-│ │ ├── ciphers/ # Cipher algorithm implementations
-│ │ ├── enums/ # Algorithm & mode enums
-│ │ ├── exceptions/ # Custom crypto-related exceptions
-│ │ ├── interfaces/ # Common interfaces for ciphers/modes
-│ │ ├── keys/ # RSA key generation & handling
-│ │ └── pojos/ # Data holders (CryptEngine, etc.)
-│ ├── dtos/ # Data transfer objects (API payloads)
-│ ├── entities/ # JPA entities (User, Message, Session)
-│ ├── filters/ # Filters (e.g., session/auth check)
-│ ├── repositories/ # JPA repositories for DB access
-│ ├── services/ # Business logic & encryption services
-│ ├── cryptography.zip # (Optional) Packaged crypto module
-│ └── KeyDistributionCenterApplication.java # Spring Boot main entry
-│
-└── resources/
-├── keys/ # Stored/generated key files (if any)
-├── static/
-│ ├── css/ # Frontend styles
-│ └── js/ # Frontend JavaScript
-└── templates/
-└── fragments/ # Thymeleaf reusable fragments
+./mvnw spring-boot:run
 ```
 
 ---
 
-## 📄 Entities Explained
+## 📁 Architecture Overview
 
-### 👤 `User`
-- Stores information about each user
-- Fields:
-    - `id`
-    - `username`
-    - `password` (RSA-encrypted)
-    - `publicKey`, `privateKey` (RSA key pair)
-- Keys are auto-generated at registration and stored securely in the database
+```mermaid
+graph TD
+    A[Client UI - Thymeleaf] --> B[Spring Boot API]
+    B --> C[Cryptography Engine]
+    C --> D[Symmetric Ciphers]
+    C --> E[RSA Key Manager]
+    B --> F[PostgreSQL DB]
+    B --> G[Session Manager]
+```
 
-### 💬 `Message`
-- Stores information about each message sent or received
-- Fields:
-    - `sender`, `receiver`
-    - `plainText`, `cipherText`
-    - `encryptedKey`, `decryptedKey`
-    - `algorithm` used
-    - `mode` (e.g., CBC, ECB)
-    - `timestamp` (when the message was sent)
-- Each message contains full encryption metadata
+## 👥 Development Team
+- **Humbat Jamalov**
+- **Asim Gasimov**
+- **Yunis Kangarli**
 
-### 🔒 `Session`
-- Created when a user logs in
-- Fields:
-    - `sessionId` (stored in cookies)
-    - `user` (the user the session belongs to)
-    - `creationTime`, `expirationTime` (default: 12 hours)
-- During a valid session, the user can access features without re-entering their password
+---
+
+<div align="center">
+  <sub>Built with ❤️ at UFAZ (French-Azerbaijani University) - 2025</sub>
+</div>

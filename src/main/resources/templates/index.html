@@ -16,26 +16,44 @@
 
         <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-        <div class="container mt-7 text-center">
-            <h1 class="display-7 text-primary">Key Distribution Center & Messenger & Encryptor & Decryptor</h1>
-            <p class="lead">Secure communication with WeCrypt</p>
+        <div class="container-fluid-custom animate-fade-in">
+            <div class="glass-card mb-5">
+                <h1 class="display-4 fw-bold" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">WeCrypt Dashboard</h1>
+                <p class="lead opacity-75">Secure end-to-end communication and cryptographic tools.</p>
+            </div>
 
-            <div th:if="${currentUser != null}" class="mt-5 text-start">
-                <h4 class="text-success">🔐 Your RSA Key Pair:</h4>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">🛡️ Public Key:</label>
-                    <pre class="bg-light p-3 rounded border" th:text="${currentUser.publicKey}"></pre>
+            <div th:if="${currentUser != null}" class="row">
+                <div class="col-md-6">
+                    <div class="glass-card h-100">
+                        <h4 class="text-success mb-4"><i class="fas fa-shield-halved me-2"></i> Public Key</h4>
+                        <div class="mb-3">
+                            <p class="small text-muted mb-2">Use this key to let others encrypt messages for you.</p>
+                            <pre th:text="${currentUser.publicKey}"></pre>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="form-label fw-semibold text-danger">🔒 Private Key:</label>
-                    <pre class="bg-light p-3 rounded border text-danger" th:text="${currentUser.privateKey}"></pre>
+                <div class="col-md-6">
+                    <div class="glass-card h-100 border-danger border-opacity-25">
+                        <h4 class="text-danger mb-4"><i class="fas fa-key me-2"></i> Private Key</h4>
+                        <div class="mb-3">
+                            <p class="small text-muted mb-2">This key should never be shared! It is used to decrypt your messages.</p>
+                            <pre class="text-danger" th:text="${currentUser.privateKey}"></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <div th:if="${currentUser == null}" class="glass-card text-center py-5 mt-5">
+                <i class="fas fa-user-lock fa-4x text-primary mb-4"></i>
+                <h3>Welcome to WeCrypt</h3>
+                <p class="text-muted">Please login or register to access your secure keys and messaging.</p>
+                <a th:href="@{/auth}" class="btn btn-primary mt-3 px-5 py-3 rounded-pill fw-bold">Get Started</a>
+            </div>
+
             <footer class="mt-5 text-center">
-                <small>WeCrypt | Humbat Jamalov, Asim Gasimov, Yunis Kangarli</small>
+                <p class="mb-0">Designed for Secure Communication</p>
+                <small>Humbat Jamalov | Asim Gasimov | Yunis Kangarli</small>
             </footer>
         </div>
 

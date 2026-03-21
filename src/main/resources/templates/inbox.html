@@ -10,99 +10,99 @@
     <div class="main">
         <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-        <div class="container mt-4">
-
-            <h2 class="text-primary text-center mb-4">📥 Inbox & 📤 Sent Messages</h2>
+        <div class="container-fluid-custom animate-fade-in">
+            <div class="glass-card mb-4">
+                <h2 class="fw-bold mb-0 text-primary"><i class="fas fa-comments me-2"></i> Security Center</h2>
+                <p class="text-muted">Manage your encrypted message history and cryptographic keys.</p>
+            </div>
 
             <!-- RECEIVED MESSAGES -->
-            <h4 class="text-success mb-3">📥 Received Messages</h4>
-            <div class="accordion mb-5" id="receivedAccordion">
-                <div th:each="msg, stat : ${receivedMessages}" class="accordion-item">
-                    <h2 class="accordion-header" th:attr="id='heading-r-' + ${stat.index}">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse"
-                                th:attr="data-bs-target='#collapse-r-' + ${stat.index}"
-                                aria-expanded="false"
-                                th:text="'From: ' + ${msg.message.sender.username} + ' | Algo: ' + ${msg.message.algorithm}">
+            <div class="row">
+                <div class="col-lg-6">
+                    <h4 class="text-success mb-4 d-flex align-items-center">
+                        <i class="fas fa-inbox me-2"></i> Received Messages
+                        <span class="badge bg-success ms-2 rounded-pill" style="font-size: 0.7rem;" th:text="${#lists.size(receivedMessages)}"></span>
+                    </h4>
+                    
+                    <div th:if="${#lists.isEmpty(receivedMessages)}" class="glass-card text-center py-5">
+                        <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No messages received yet.</p>
+                    </div>
+
+                    <div th:each="msg, stat : ${receivedMessages}" class="glass-card mb-3 border-start border-success border-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="mb-0 fw-bold" th:text="${msg.message.sender.username}"></h6>
+                                <small class="text-muted" th:text="${#temporals.format(msg.message.sentAt, 'MMM dd, HH:mm')}"></small>
+                            </div>
+                            <span class="badge bg-light text-dark border" th:text="${msg.message.algorithm}"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="small fw-bold text-uppercase opacity-50">Decrypted Message</label>
+                            <p class="mb-0 p-3 bg-light rounded-3 border" th:text="${msg.decryptedText}"></p>
+                        </div>
+                        
+                        <button class="btn btn-sm btn-outline-secondary w-100 mt-2" type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#details-r-' + ${stat.index}">
+                            Show Security Details <i class="fas fa-chevron-down ms-1"></i>
                         </button>
-                    </h2>
-                    <div th:attr="id='collapse-r-' + ${stat.index}" class="accordion-collapse collapse"
-                         th:attrappend="aria-labelledby='heading-r-' + ${stat.index}"
-                         data-bs-parent="#receivedAccordion">
-                        <div class="accordion-body">
+                        
+                        <div class="collapse mt-3" th:attr="id='details-r-' + ${stat.index}">
+                            <div class="p-3 bg-dark text-white rounded-3 small font-monospace">
+                                <p class="mb-1 text-warning">// Encrypted Payload</p>
+                                <div class="text-truncate mb-2" th:text="${msg.message.encryptedText}"></div>
+                                <p class="mb-1 text-warning">// Symmetric Key (Encrypted)</p>
+                                <div class="text-truncate" th:text="${msg.message.encryptedSymmetricKey}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <p><strong>Encrypted Message:</strong></p>
-                            <pre th:text="${msg.message.encryptedText}"></pre>
+                <!-- SENT MESSAGES -->
+                <div class="col-lg-6">
+                    <h4 class="text-primary mb-4 d-flex align-items-center">
+                        <i class="fas fa-paper-plane me-2"></i> Sent Messages
+                        <span class="badge bg-primary ms-2 rounded-pill" style="font-size: 0.7rem;" th:text="${#lists.size(sentMessages)}"></span>
+                    </h4>
 
-                            <p><strong>Encrypted Symmetric Key:</strong></p>
-                            <pre th:text="${msg.message.encryptedSymmetricKey}"></pre>
+                    <div th:if="${#lists.isEmpty(sentMessages)}" class="glass-card text-center py-5">
+                        <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No messages sent yet.</p>
+                    </div>
 
-                            <p><strong>Decrypted Symmetric Key:</strong></p>
-                            <pre th:text="${msg.decryptedKey}"></pre>
+                    <div th:each="msg, stat : ${sentMessages}" class="glass-card mb-3 border-start border-primary border-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="mb-0 fw-bold" th:text="'To: ' + ${msg.message.receiver.username}"></h6>
+                                <small class="text-muted" th:text="${#temporals.format(msg.message.sentAt, 'MMM dd, HH:mm')}"></small>
+                            </div>
+                            <span class="badge bg-light text-dark border" th:text="${msg.message.algorithm}"></span>
+                        </div>
 
-                            <p><strong>Decrypted Text:</strong></p>
-                            <pre th:text="${msg.decryptedText}"></pre>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-uppercase opacity-50">Content Sent</label>
+                            <p class="mb-0 p-3 bg-light rounded-3 border" th:text="${msg.decryptedText}"></p>
+                        </div>
 
-                            <p><strong>Block Mode:</strong> <span th:text="${msg.message.mode}"></span></p>
-                            <p><strong>Sent At:</strong> <span th:text="${#temporals.format(msg.message.sentAt, 'yyyy-MM-dd HH:mm')}"></span></p>
+                        <button class="btn btn-sm btn-outline-secondary w-100 mt-2" type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#details-s-' + ${stat.index}">
+                            Show Security Details <i class="fas fa-chevron-down ms-1"></i>
+                        </button>
 
-                            <hr>
-                            <p class="fw-semibold text-primary">🛡️ Your Public Key:</p>
-                            <pre th:text="${msg.message.receiver.publicKey}"></pre>
-
-                            <p class="fw-semibold text-danger">🔐 Your Private Key:</p>
-                            <pre th:text="${msg.message.receiver.privateKey}"></pre>
+                        <div class="collapse mt-3" th:attr="id='details-s-' + ${stat.index}">
+                            <div class="p-3 bg-dark text-white rounded-3 small font-monospace">
+                                <p class="mb-1 text-primary">// Encrypted Payload</p>
+                                <div class="text-truncate mb-2" th:text="${msg.message.encryptedText}"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SENT MESSAGES -->
-            <h4 class="text-primary mb-3">📤 Sent Messages</h4>
-            <div class="accordion" id="sentAccordion">
-                <div th:each="msg, stat : ${sentMessages}" class="accordion-item">
-                    <h2 class="accordion-header" th:attr="id='heading-s-' + ${stat.index}">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse"
-                                th:attr="data-bs-target='#collapse-s-' + ${stat.index}"
-                                aria-expanded="false"
-                                th:text="'To: ' + ${msg.message.receiver.username} + ' | Algo: ' + ${msg.message.algorithm}">
-                        </button>
-                    </h2>
-                    <div th:attr="id='collapse-s-' + ${stat.index}" class="accordion-collapse collapse"
-                         th:attrappend="aria-labelledby='heading-s-' + ${stat.index}"
-                         data-bs-parent="#sentAccordion">
-                        <div class="accordion-body">
-
-                            <p><strong>Encrypted Message:</strong></p>
-                            <pre th:text="${msg.message.encryptedText}"></pre>
-
-                            <p><strong>Encrypted Symmetric Key:</strong></p>
-                            <pre th:text="${msg.message.encryptedSymmetricKey}"></pre>
-
-                            <p><strong>Decrypted Symmetric Key:</strong></p>
-                            <pre th:text="${msg.decryptedKey}"></pre>
-
-                            <p><strong>Decrypted Text:</strong></p>
-                            <pre th:text="${msg.decryptedText}"></pre>
-
-                            <p><strong>Block Mode:</strong> <span th:text="${msg.message.mode}"></span></p>
-                            <p><strong>Sent At:</strong> <span th:text="${#temporals.format(msg.message.sentAt, 'yyyy-MM-dd HH:mm')}"></span></p>
-
-                            <hr>
-                            <p class="fw-semibold text-primary">🧾 Receiver's Public Key:</p>
-                            <pre th:text="${msg.message.receiver.publicKey}"></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
+            <footer class="mt-5 text-center">
+                <p class="mb-0">Secure Key Distribution & Messaging</p>
+                <small>Humbat Jamalov | Asim Gasimov | Yunis Kangarli</small>
+            </footer>
         </div>
-
-        <footer class="mt-5 text-center">
-            <small>WeCrypt | Humbat Jamalov, Asim Gasimov, Yunis Kangarli</small>
-        </footer>
     </div>
 </div>
 

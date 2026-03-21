@@ -3,32 +3,28 @@ document.getElementById('sidebarToggle').addEventListener('click', function () {
     sidebar.classList.toggle('collapsed');
 });
 
-
-const brandTitle = document.getElementById('brandTitle');
-
 const themeToggleBtn = document.getElementById('themeToggle');
 const body = document.body;
 
-// On load: check and apply saved theme
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'dark') {
-    body.classList.add('dark-mode');
-    themeToggleBtn.textContent = '☀️';
-    brandTitle.classList.remove('text-dark');
-    brandTitle.classList.add('text-white');
-}
-// Toggle on button click
-themeToggleBtn.addEventListener('click', () => {
-    body.classList.toggle('dark-mode');
-    const isDark = body.classList.contains('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+// Function to apply theme styles
+function applyTheme(isDark) {
     if (isDark) {
-        brandTitle.classList.remove('text-dark');
-        brandTitle.classList.add('text-white');
+        body.classList.add('dark-mode');
+        themeToggleBtn.textContent = '☀️';
     } else {
-        brandTitle.classList.remove('text-white');
-        brandTitle.classList.add('text-dark');
+        body.classList.remove('dark-mode');
+        themeToggleBtn.textContent = '🌙';
     }
+}
+
+// Initial Load
+const savedTheme = localStorage.getItem('theme');
+applyTheme(savedTheme === 'dark');
+
+// Click Event
+themeToggleBtn.addEventListener('click', () => {
+    const isDark = !body.classList.contains('dark-mode');
+    applyTheme(isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
 });
 

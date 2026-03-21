@@ -9,55 +9,76 @@
     <div class="main">
         <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-        <div class="container mt-5">
-            <h2 class="text-center text-primary mb-4">🛡️ Encrypt a Message</h2>
+        <div class="container-fluid-custom animate-fade-in">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="glass-card mb-4">
+                        <div class="text-center mb-5">
+                            <i class="fas fa-file-shield fa-3x text-primary mb-3"></i>
+                            <h2 class="fw-bold">Encryption Factory</h2>
+                            <p class="text-muted">Direct symmetric encryption utility with multiple block modes.</p>
+                        </div>
 
-            <form th:action="@{/encrypt/process}" method="post">
-                <div class="mb-3">
-                    <label for="algorithm" class="form-label">Symmetric Algorithm</label>
-                    <select class="form-select" id="algorithm" name="algorithm" required>
-                        <option value="Caesar">Caesar (with block modes)</option>
-                        <option value="Vigenere">Vigenere (with block modes)</option>
-                        <option value="Playfair">Playfair</option>
-                        <option value="Railfence">Railfence</option>
-                    </select>
+                        <form th:action="@{/encrypt/process}" method="post">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="algorithm" class="form-label">Cipher Engine</label>
+                                    <select class="form-select form-control" id="algorithm" name="algorithm" required>
+                                        <option value="Caesar">Standard Caesar</option>
+                                        <option value="Vigenere" selected>Polyalphabetic Vigenere</option>
+                                        <option value="Playfair">Playfair Matrix</option>
+                                        <option value="Railfence">Railfence Transposition</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <label for="mode" class="form-label">Operating Mode</label>
+                                    <select class="form-select form-control" id="mode" name="mode" required>
+                                        <option value="ECB">ECB Mode</option>
+                                        <option value="CBC">CBC Mode</option>
+                                        <option value="CFB">CFB Mode</option>
+                                        <option value="OFB">OFB Mode</option>
+                                        <option value="NONE">No Block Mode</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-12 mb-4">
+                                    <label for="key" class="form-label">Symmetric Key</label>
+                                    <input type="text" class="form-control" id="key" name="key" placeholder="Enter encryption key..." required>
+                                </div>
+
+                                <div class="col-md-12 mb-4">
+                                    <label for="text" class="form-label">Plaintext Input</label>
+                                    <textarea class="form-control" id="text" name="text" rows="4" placeholder="Enter message to encrypt..." required></textarea>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold">
+                                        Generate Ciphertext <i class="fas fa-lock ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div th:if="${encryptedText != null}" class="glass-card border-success border-opacity-25 animate-fade-in">
+                        <h5 class="text-success mb-3 fw-bold"><i class="fas fa-check-circle me-2"></i> Encryption Successful</h5>
+                        <label class="small text-muted mb-2">Resulting Ciphertext:</label>
+                        <textarea class="form-control bg-dark text-success font-monospace" rows="4" readonly th:text="${encryptedText}"></textarea>
+                        <div class="mt-3 text-end">
+                            <button class="btn btn-sm btn-link text-success text-decoration-none" onclick="navigator.clipboard.writeText(this.parentElement.previousElementSibling.value)">
+                                <i class="fas fa-copy me-1"></i> Copy to Clipboard
+                            </button>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="mb-3">
-                    <label for="mode" class="form-label">Block Mode</label>
-                    <select class="form-select" id="mode" name="mode" required>
-                        <option value="ECB">ECB</option>
-                        <option value="CBC">CBC</option>
-                        <option value="CFB">CFB</option>
-                        <option value="OFB">OFB</option>
-                        <option value="NONE">None</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="key" class="form-label">Symmetric Key</label>
-                    <input type="text" class="form-control" id="key" name="key" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="text" class="form-label">Plaintext</label>
-                    <textarea class="form-control" id="text" name="text" rows="4" required></textarea>
-                </div>
-
-                <div class="text-center mb-4">
-                    <button type="submit" class="btn btn-primary px-5">Encrypt 🔐</button>
-                </div>
-            </form>
-
-            <div th:if="${encryptedText != null}" class="mt-5">
-                <h5 class="text-success">🔒 Encrypted Output:</h5>
-                <textarea class="form-control" rows="4" readonly th:text="${encryptedText}"></textarea>
             </div>
-        </div>
 
-        <footer class="mt-5 text-center">
-            <small>WeCrypt | Humbat Jamalov, Asim Gasimov, Yunis Kangarli</small>
-        </footer>
+            <footer class="mt-5 text-center">
+                <p class="mb-0">Secure Key Distribution & Messaging</p>
+                <small>Humbat Jamalov | Asim Gasimov | Yunis Kangarli</small>
+            </footer>
+        </div>
     </div>
 </div>
 

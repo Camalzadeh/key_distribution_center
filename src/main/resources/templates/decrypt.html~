@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Decrypt')}"></head>
+<body>
+
+<div class="wrapper">
+
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  <div class="main">
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container mt-5">
+      <h2 class="text-center text-primary mb-4">🔓 Decrypt a Message</h2>
+
+      <form th:action="@{/decrypt/process}" method="post">
+        <!-- Algorithm -->
+        <div class="mb-3">
+          <label for="algorithm" class="form-label">Symmetric Algorithm</label>
+          <select class="form-select" id="algorithm" name="algorithm" required>
+            <option value="Caesar">Caesar (with block modes)</option>
+            <option value="Vigenere">Vigenere (with block modes)</option>
+            <option value="Playfair">Playfair</option>
+            <option value="Railfence">Railfence</option>
+          </select>
+        </div>
+
+        <!-- Mode -->
+        <div class="mb-3">
+          <label for="mode" class="form-label">Block Mode</label>
+          <select class="form-select" id="mode" name="mode" required>
+            <option value="ECB">ECB</option>
+            <option value="CBC">CBC</option>
+            <option value="CFB">CFB</option>
+            <option value="OFB">OFB</option>
+            <option value="NONE">None</option>
+          </select>
+        </div>
+
+        <!-- Symmetric Key -->
+        <div class="mb-3">
+          <label for="key" class="form-label">Symmetric Key</label>
+          <input type="text" class="form-control" id="key" name="key" required>
+        </div>
+
+        <!-- Encrypted Text -->
+        <div class="mb-3">
+          <label for="encryptedText" class="form-label">Encrypted Text</label>
+          <textarea class="form-control" id="encryptedText" name="encryptedText" rows="4" required></textarea>
+        </div>
+
+        <!-- Submit -->
+        <div class="text-center mb-4">
+          <button type="submit" class="btn btn-success px-5">Decrypt 🔓</button>
+        </div>
+      </form>
+
+      <!-- Output -->
+      <div th:if="${decryptedText != null}" class="mt-5">
+        <h5 class="text-success">✅ Decrypted Result:</h5>
+        <textarea class="form-control" rows="4" readonly th:text="${decryptedText}"></textarea>
+      </div>
+    </div>
+
+    <footer class="mt-5 text-center">
+      <small>WeCrypt | Humbat Jamalov, Asim Gasimov, Yunis Kangarli</small>
+    </footer>
+  </div>
+
+</div>
+
+<!-- Disable mode for algorithms without block support -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const algo = document.getElementById("algorithm");
+    const mode = document.getElementById("mode");
+
+    function updateMode() {
+      const selected = algo.value;
+      const isBlock = (selected === "Caesar" || selected === "Vigenere");
+      mode.disabled = !isBlock;
+      if (!isBlock) {
+        mode.value = "NONE";
+      }
+    }
+
+    algo.addEventListener("change", updateMode);
+    updateMode(); // on load
+  });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>

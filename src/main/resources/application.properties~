@@ -1,0 +1,19 @@
+spring.application.name=key-distribution-center
+
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.database=postgresql
+
+# Configuration for the database connection
+spring.jpa.hibernate.ddl-auto=update
+spring.datasource.url=jdbc:postgresql://postgres:lrfvBQofysijAVHhNaiSllBSqcDKdWvn@metro.proxy.rlwy.net:50092/railway
+spring.datasource.username=postgres
+spring.datasource.password=lrfvBQofysijAVHhNaiSllBSqcDKdWvn
+
+
+server.error.whitelabel.enabled=false
+spring.thymeleaf.check-template-location=true
+spring.web.resources.add-mappings=true
+
+session.ttl.hours=12
+

@@ -23,4 +23,3 @@ databases:
   - name: wecrypt-db
     plan: free
     databaseName: kdc
-    user: postgres

@@ -7,7 +7,7 @@ services:
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
           name: wecrypt-db
-          property: connectionString
+          property: jdbcConnectionString
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: wecrypt-db

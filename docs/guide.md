@@ -157,7 +157,7 @@ application pulls that finished image — nothing is compiled at deploy time. Th
 the tests, asserts the image contains no credentials and does not run as root, and starts it
 against a real database before publishing.
 
-A push to `main` publishes `latest` and a `sha-` tag. `prod` moves only when the workflow is
+A push to `master` publishes `latest` and a `sha-` tag. `prod` moves only when the workflow is
 run by hand with `release=true`, because Hibernate applies the schema when the container
 starts: deploying every commit automatically would mean applying every schema change
 automatically, and that is the step that putting the old image back does not undo.

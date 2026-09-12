@@ -130,7 +130,7 @@ PostgreSQL, builds the container image, and before publishing anything it:
   sign-in page renders, a request without a session is turned away, and the health endpoint
   reports `UP` without leaking the datasource URL.
 
-A push to `main` publishes `latest` and a `sha-` tag. **`prod` moves only when the workflow is
+A push to `master` publishes `latest` and a `sha-` tag. **`prod` moves only when the workflow is
 run manually with `release=true`** — because Hibernate applies the schema at start-up, so an
 automatic deployment of every commit would also be an unreviewed schema change, and that is the
 one step putting the old image back does not undo.

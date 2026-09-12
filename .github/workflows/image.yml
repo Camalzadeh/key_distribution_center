@@ -8,7 +8,7 @@ name: Image
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "src/**"
       - "pom.xml"
@@ -18,7 +18,7 @@ on:
       - ".dockerignore"
       - ".github/workflows/image.yml"
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - "src/**"
       - "pom.xml"
@@ -30,7 +30,7 @@ on:
 
   # Releasing is a separate, deliberate act from building.
   #
-  # A push to main moves `latest`. Only a run started here with release=true
+  # A push to master moves `latest`. Only a run started here with release=true
   # moves `prod`. That separation exists because Hibernate applies the schema
   # when the container starts (ddl-auto=update), so an automatic deployment of
   # every commit would also be an automatic, unreviewed schema change — and a

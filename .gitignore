@@ -48,3 +48,27 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Secrets and key material — never in git ###
+# A private key committed once stays in history for ever; removing the file in
+# a later commit does not remove it from the earlier one. Keep them out.
+*.pem
+*.p12
+*.jks
+*.keystore
+src/main/resources/keys/
+.env
+.env.*
+# The template carries no real values and has to be committed -- the setup
+# instructions start with `cp .env.example .env`, so an ignored template means
+# the first command in the README fails.
+!.env.example
+
+### Editor backups and stray archives ###
+# Files like `application.properties~` and a hand-made `cryptography.zip` were
+# committed by accident. They are build-irrelevant and one of them shipped a
+# copy of the configuration, credentials included.
+*~
+*.zip
+*.orig
+*.rej

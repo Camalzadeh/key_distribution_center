@@ -25,6 +25,12 @@ public class AuthController {
     @Value("${session.ttl.hours}")
     private int sessionTtlHours;
 
+    // True in every deployment that terminates TLS in front of this
+    // application; false only for plain-HTTP local work, where a browser
+    // discards a Secure cookie and the login silently fails to stick.
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
+
     public AuthController(UserService userService, SessionService sessionService) {
         this.userService = userService;
         this.sessionService = sessionService;
@@ -47,6 +53,7 @@ public class AuthController {
         Cookie cookie = new Cookie("SESSION_ID", null);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
         cookie.setMaxAge(0);
         response.addCookie(cookie);
 
@@ -59,8 +66,6 @@ public class AuthController {
     public ResponseEntity<?> submit(@RequestBody UserDTO userDTO, HttpServletResponse response) {
 
         Optional<User> existingUser = Optional.ofNullable(userService.findByUsername(userDTO.username()));
-
-        System.out.println("UserDTO: " + userDTO);
 
         if (existingUser.isPresent()) {
             Optional<User> userOpt = userService.login(userDTO);
@@ -86,7 +91,7 @@ public class AuthController {
         Cookie cookie = new Cookie("SESSION_ID", sessionId);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);
+        cookie.setSecure(cookieSecure);
         cookie.setMaxAge(60 * 60 * sessionTtlHours);
         response.addCookie(cookie);
     }

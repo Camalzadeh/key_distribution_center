@@ -1,29 +1,78 @@
+# =============================================================================
+# Local development stack. Everything runs in Docker — there is no need for a
+# JDK, Maven or PostgreSQL on the machine.
+#
+#   cp .env.example .env      # then edit the password
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# This file is for local work only. It is not how the application is deployed:
+# a deployment uses a prebuilt image from the registry and a compose file kept
+# with the deployment, not this one.
+# =============================================================================
+
+name: kdc
+
 services:
   db:
-    image: postgres:16
-    container_name: wecrypt-db
+    image: postgres:18
+    container_name: kdc-db
+    restart: unless-stopped
+
+    # Read from .env, with no default. A password committed to this file is a
+    # published password — the one that used to be here (in this file and in
+    # application.properties) was the real one, in a public repository.
     environment:
-      POSTGRES_DB: kdc
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: humbet2006
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+
+    # Published so a GUI client on the host can reach it. Bound to loopback:
+    # plain `5432:5432` listens on every interface, which on a laptop on a
+    # café network is an open database.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+
+    volumes:
+      - pgdata:/var/lib/postgresql
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d wecrypt"]
-      interval: 10s
+      # The old test was `pg_isready -U user -d wecrypt` — a user and a
+      # database that this stack never created, so it could only ever fail.
+      # It went unnoticed because nothing waited on the result for long
+      # enough to matter. $$ escapes compose interpolation so the variable is
+      # read inside the container.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 20s
 
   app:
     build: .
-    container_name: wecrypt-app
+    container_name: kdc-app
+    restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/kdc
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=humbet2006
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      # Locally the app is reached over plain http://localhost, and a browser
+      # silently discards a Secure cookie there — the login would appear to
+      # succeed and then bounce straight back to /auth.
+      COOKIE_SECURE: "false"
+
+      # Handy while developing, and the reason it is not the default: this
+      # writes every statement, values included, to the container log.
+      SPRING_JPA_SHOW_SQL: "true"
+
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  pgdata:

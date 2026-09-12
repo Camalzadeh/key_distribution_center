@@ -1,29 +1,54 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Error</title>
-    <link href="css/error.css" rel="stylesheet">
-</head>
+<!--/*
+  Two bugs fixed here beyond the styling.
+
+  The stylesheet was linked as `css/error.css` — relative, so it resolved
+  against the failing URL. An error under /message/send looked for
+  /message/css/error.css and the page rendered unstyled, which is precisely
+  when you least want it to. It is an absolute, context-aware link now.
+
+  Font Awesome was never loaded on this page either, so the icon it asked for
+  rendered as an empty box.
+*/-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Something went wrong')}"></head>
 <body>
-<div class="container animate-fade-in">
-    <i class="fas fa-triangle-exclamation fa-5x text-danger mb-5"></i>
-    <h1 class="display-1 fw-black">Oops!</h1>
 
-    <!-- Status-specific messages -->
-    <div class="mb-5">
-        <h4 th:if="${status == 404}" class="text-muted">The requested page was not found.</h4>
-        <h4 th:if="${status == 500}" class="text-muted">A server disruption occurred. Our team is aware.</h4>
-        <h4 th:if="${status == 401}" class="text-muted">Security clearance required for this sector.</h4>
-        <h4 th:if="${status != 404 and status != 500 and status != 401}" class="text-muted">
-            An unexpected error occurred.
-        </h4>
-        <p class="code mt-3">
-             Error Protocol: <span th:text="${status}">Unknown Error Code</span>
-        </p>
+<button class="icon-btn theme-float" type="button" data-theme-toggle aria-label="Switch theme">
+  <i class="fas fa-moon"></i>
+</button>
+
+<main class="solo">
+  <div class="solo__card solo__card--wide rise">
+    <div class="errcode" th:text="${status != null} ? ${status} : '—'">500</div>
+
+    <h1 class="solo__title mt-3" th:switch="${status}">
+      <span th:case="404">No such page</span>
+      <span th:case="403">Not yours to open</span>
+      <span th:case="401">You need to sign in</span>
+      <span th:case="500">The server broke</span>
+      <span th:case="*">Something went wrong</span>
+    </h1>
+
+    <p class="solo__sub" th:switch="${status}">
+      <span th:case="404">The address is right in shape but there is nothing behind it.</span>
+      <span th:case="403">You are signed in, but this is not for your account.</span>
+      <span th:case="401">Your session has expired, or you never had one.</span>
+      <span th:case="500">The request failed on our side. Trying again is reasonable.</span>
+      <span th:case="*">No more detail than that is available here.</span>
+    </p>
+
+    <div class="d-flex flex-wrap gap-2 justify-content-center mt-4">
+      <a class="btn-k btn-k--primary" th:href="@{/}">
+        <i class="fas fa-house"></i> Back to keys
+      </a>
+      <a class="btn-k btn-k--ghost" th:href="@{/auth}">
+        <i class="fas fa-arrow-right-to-bracket"></i> Sign in
+      </a>
     </div>
+  </div>
+</main>
 
-    <a href="/" class="btn-primary rounded-pill px-5 shadow-lg">Return to Base</a>
-</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>
 </html>

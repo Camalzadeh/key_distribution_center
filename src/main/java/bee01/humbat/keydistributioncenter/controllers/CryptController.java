@@ -28,6 +28,14 @@ public class CryptController {
                                  @RequestParam String text,
                                  Model model) {
 
+        // Put the submission back on the model before anything can throw, so
+        // the form redisplays what was typed instead of emptying itself. A
+        // rejected key used to cost the reader the whole form.
+        model.addAttribute("algorithm", algorithm);
+        model.addAttribute("mode", mode.orElse("NONE"));
+        model.addAttribute("key", key);
+        model.addAttribute("text", text);
+
         try {
             Algorithm algoEnum = Algorithm.getAlgorithm(algorithm);
             Mode modeEnum = Mode.getMode(mode.orElse("NONE"));
@@ -56,6 +64,13 @@ public class CryptController {
                                  @RequestParam String key,
                                  @RequestParam String encryptedText,
                                  Model model) {
+
+        // Same reason as encryptProcess: a pasted ciphertext must survive a
+        // rejected key.
+        model.addAttribute("algorithm", algorithm);
+        model.addAttribute("mode", mode.orElse("NONE"));
+        model.addAttribute("key", key);
+        model.addAttribute("submittedCipherText", encryptedText);
 
         try {
             Algorithm algoEnum = Algorithm.getAlgorithm(algorithm);

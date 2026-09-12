@@ -1,116 +1,128 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/head :: head('Send Message')"></head>
+<head th:replace="~{fragments/layout :: head('Compose')}"></head>
 <body>
 
-<div class="wrapper">
+<div class="shell">
+  <div th:replace="~{fragments/layout :: rail}"></div>
+  <div th:replace="~{fragments/layout :: scrim}"></div>
 
-    <div th:replace="fragments/sidebar :: sidebar"></div>
+  <div class="main">
+    <div th:replace="~{fragments/layout :: topbar}"></div>
 
-    <div class="main">
-        <div th:replace="fragments/navbar :: navbar"></div>
+    <main class="page page--narrow rise">
+      <div class="page__head">
+        <span class="page__eyebrow"><i class="fas fa-paper-plane"></i> Compose</span>
+        <h1 class="page__title">Send an enciphered message</h1>
+        <p class="page__lead">
+          Pick a cipher and a symmetric key. The key is wrapped with the recipient's public
+          RSA key before anything is stored, so it never sits in the database in the clear.
+        </p>
+      </div>
 
-        <div class="container-fluid-custom animate-fade-in">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="glass-card">
-                        <div class="text-center mb-5">
-                            <i class="fas fa-paper-plane fa-3x text-primary mb-3"></i>
-                            <h2 class="fw-bold">Secure Messenger</h2>
-                            <p class="text-muted">Compose and encrypt your message locally before transmission.</p>
-                        </div>
+      <!--/* Nobody else has registered yet, so there is no one to send to. The
+             old page rendered an empty <select> with only its disabled
+             placeholder and a live submit button. */-->
+      <div th:if="${#lists.isEmpty(users)}" class="empty">
+        <i class="fas fa-user-plus"></i>
+        <p class="mb-0">
+          No other accounts yet — a message needs a recipient.<br>
+          Register a second username and it will appear here.
+        </p>
+      </div>
 
-                        <form th:action="@{/message/send}" method="post">
-                            <div class="row">
-                                <div class="col-md-12 mb-4">
-                                    <label for="receiverId" class="form-label">Recipient</label>
-                                    <select id="receiverId" name="receiverId" class="form-select form-control" required>
-                                        <option disabled selected value="">-- Select a recipient --</option>
-                                        <option th:each="u : ${users}"
-                                                th:value="${u.id}"
-                                                th:text="'@' + ${u.username} + ' (Key: ' + ${#strings.substring(u.publicKey, 0, 15)} + '...)'">
-                                        </option>
-                                    </select>
-                                </div>
+      <div th:unless="${#lists.isEmpty(users)}" class="card-k card-k--accent card-k--pad-lg">
+        <form th:action="@{/message/send}" method="post" data-cipher-form>
 
-                                <div class="col-md-6 mb-4">
-                                    <label for="algorithm" class="form-label">Encryption Algorithm</label>
-                                    <select id="algorithm" name="algorithm" class="form-select form-control" required>
-                                        <option value="Caesar">Basic Caesar</option>
-                                        <option value="Vigenere" selected>Advanced Vigenere</option>
-                                        <option value="Playfair">Playfair Matrix</option>
-                                        <option value="Railfence">Railfence Transposition</option>
-                                    </select>
-                                </div>
+          <div class="field">
+            <label class="field__label" for="receiverId">Recipient</label>
+            <div class="select-wrap">
+              <select class="form-select" id="receiverId" name="receiverId" required>
+                <option disabled selected value="">Choose an account…</option>
+                <!--/* The public key is shown truncated so two accounts with
+                       similar names are still distinguishable. #strings.abbreviate
+                       is safe on a short value; substring(0,15) threw
+                       StringIndexOutOfBounds on any key shorter than that. */-->
+                <option th:each="u : ${users}"
+                        th:value="${u.id}"
+                        th:text="'@' + ${u.username} + '  ·  key ' + ${#strings.abbreviate(u.publicKey, 18)}">
+                </option>
+              </select>
+            </div>
+            <p class="field__hint">Their public key is used to wrap the symmetric key below.</p>
+          </div>
 
-                                <div class="col-md-6 mb-4">
-                                    <label for="blockMode" class="form-label">Block Operation Mode</label>
-                                    <select id="blockMode" name="blockMode" class="form-select form-control" required>
-                                        <option value="None">None</option>
-                                        <option value="ECB">ECB (Electronic Codebook)</option>
-                                        <option value="CBC">CBC (Cipher Block Chaining)</option>
-                                        <option value="CFB">CFB (Cipher Feedback)</option>
-                                        <option value="OFB">OFB (Output Feedback)</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-12 mb-4">
-                                    <label for="key" class="form-label">Symmetric Key</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-key text-muted"></i></span>
-                                        <input type="text" id="key" name="key" class="form-control border-start-0" placeholder="e.g. MYSECRETKEY" required>
-                                    </div>
-                                    <div class="form-text mt-2 small">This key will be encrypted with the recipient's public RSA key.</div>
-                                </div>
-
-                                <div class="col-md-12 mb-4">
-                                    <label for="content" class="form-label">Message Content</label>
-                                    <textarea id="content" name="content" class="form-control" rows="4" placeholder="Type your confidential message here..." required></textarea>
-                                </div>
-
-                                <div class="col-md-12">
-                                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold">
-                                        <i class="fas fa-lock me-2"></i> Encrypt & Send
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="field">
+                <label class="field__label" for="algorithm">Cipher</label>
+                <div class="select-wrap">
+                  <select class="form-select" id="algorithm" name="algorithm" required
+                          data-cipher-algorithm>
+                    <option value="Vigenere" selected
+                            data-key-hint="Any text. Its letters form the repeating shift sequence."
+                            data-key-example="LEMONBASIL">Vigenère — polyalphabetic</option>
+                    <option value="Caesar"
+                            data-key-hint="A whole number: how far to shift each letter."
+                            data-key-example="3" data-key-numeric="1">Caesar — fixed shift</option>
+                    <option value="Playfair"
+                            data-key-hint="Letters only. Digits, spaces and punctuation are rejected."
+                            data-key-example="MONARCHY">Playfair — digram matrix</option>
+                    <option value="Railfence"
+                            data-key-hint="A whole number: how many rails to write across."
+                            data-key-example="4" data-key-numeric="1">Rail Fence — transposition</option>
+                  </select>
                 </div>
+              </div>
             </div>
 
-            <footer class="mt-5 text-center">
-                <p class="mb-0">Secure Key Distribution & Messaging</p>
-                <small>Humbat Jamalov | Asim Gasimov | Yunis Kangarli</small>
-            </footer>
-        </div>
-    </div>
+            <div class="col-md-6">
+              <div class="field">
+                <label class="field__label" for="blockMode">Block mode</label>
+                <div class="select-wrap">
+                  <select class="form-select" id="blockMode" name="blockMode" required
+                          data-cipher-mode data-block-capable="Caesar Vigenere" data-none-value="None">
+                    <option value="None">None</option>
+                    <option value="ECB">ECB — electronic codebook</option>
+                    <option value="CBC">CBC — cipher block chaining</option>
+                    <option value="CFB">CFB — cipher feedback</option>
+                    <option value="OFB">OFB — output feedback</option>
+                  </select>
+                </div>
+                <p class="field__hint" data-cipher-mode-hint hidden>
+                  This cipher rearranges the whole text, so a block mode does not apply.
+                </p>
+              </div>
+            </div>
+          </div>
 
+          <div class="field">
+            <label class="field__label" for="key">Symmetric key</label>
+            <div class="input-icon">
+              <i class="fas fa-key"></i>
+              <input class="form-control mono" type="text" id="key" name="key"
+                     autocomplete="off" spellcheck="false" required data-cipher-key>
+            </div>
+            <p class="field__hint" data-cipher-key-hint></p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="content">Message</label>
+            <textarea class="form-control" id="content" name="content" rows="5"
+                      placeholder="Write what you want enciphered…" required></textarea>
+          </div>
+
+          <button class="btn-k btn-k--primary btn-k--block btn-k--lg" type="submit">
+            <i class="fas fa-lock"></i> Encipher and send
+          </button>
+        </form>
+      </div>
+
+      <div th:replace="~{fragments/layout :: foot}"></div>
+    </main>
+  </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const algorithmSelect = document.getElementById('algorithm');
-        const blockModeSelect = document.getElementById('blockMode');
-
-        function updateBlockMode() {
-            const algo = algorithmSelect.value;
-
-            const shouldDisable = (algo === 'Playfair' || algo === 'Railfence');
-            blockModeSelect.disabled = shouldDisable;
-
-            if (shouldDisable) {
-                blockModeSelect.value = 'None';
-            }
-        }
-
-        algorithmSelect.addEventListener('change', updateBlockMode);
-        updateBlockMode();
-    });
-</script>
-
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/index.js"></script>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>
 </html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!--/*
+  Every shared piece of chrome lives here: the document head, the navigation
+  rail, the top bar, the drawer scrim and the footer.
+
+  It replaces head.html, navbar.html and sidebar.html. The footer in
+  particular was copy-pasted into four templates with three different
+  wordings, so a change to it used to mean four edits and a diff review to
+  find the one that was missed.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--/* ===================================================================== */-->
+<!--/* head(title)                                                          */-->
+<!--/* ===================================================================== */-->
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex, nofollow">
+  <title th:text="|${title} · Key Distribution Center|">Key Distribution Center</title>
+
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/icon.svg}">
+
+  <!--/*
+    The theme is written onto <html> before the stylesheet is applied, so the
+    first paint is already in the right theme. Doing it in app.js instead
+    produced a white flash on every navigation in dark mode, because the
+    script runs after the document has been painted once.
+
+    Reading localStorage can throw outright (private windows, blocked site
+    data), hence the try. With nothing stored we follow the operating system.
+  */-->
+  <script>
+    (function () {
+      var t = null;
+      try { t = window.localStorage.getItem("kdc.theme"); } catch (e) { }
+      if (t !== "light" && t !== "dark") {
+        t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-bs-theme", t);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+
+<body>
+
+<!--/* ===================================================================== */-->
+<!--/* rail — the left navigation                                           */-->
+<!--/* ===================================================================== */-->
+<nav id="rail" class="rail" th:fragment="rail" aria-label="Main navigation">
+  <div class="rail__head">
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark"><i class="fas fa-key"></i></span>
+      <span class="brand__text">
+        <span class="brand__name">Key Distribution</span>
+        <span class="brand__sub">Center</span>
+      </span>
+    </a>
+  </div>
+
+  <div class="rail__nav">
+    <ul>
+      <!--/*
+        `is-active` comes from GlobalModelAdvice#currentPath. Thymeleaf 3.1
+        removed the #request expression object, so the template cannot read
+        the URI itself any more; the old sidebar had an .active style rule
+        that nothing ever applied, which is why every page looked the same
+        in the nav.
+      */-->
+      <li>
+        <a class="rail__link" th:href="@{/}"
+           th:classappend="${currentPath == '/'} ? 'is-active'">
+          <i class="fas fa-shield-halved"></i><span>Keys</span>
+        </a>
+      </li>
+      <li>
+        <a class="rail__link" th:href="@{/inbox}"
+           th:classappend="${#strings.startsWith(currentPath, '/inbox')} ? 'is-active'">
+          <i class="fas fa-inbox"></i><span>Messages</span>
+        </a>
+      </li>
+      <li>
+        <a class="rail__link" th:href="@{/message}"
+           th:classappend="${#strings.startsWith(currentPath, '/message')} ? 'is-active'">
+          <i class="fas fa-paper-plane"></i><span>Compose</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="rail__label">Cipher tools</div>
+    <ul>
+      <li>
+        <a class="rail__link" th:href="@{/encrypt}"
+           th:classappend="${#strings.startsWith(currentPath, '/encrypt')} ? 'is-active'">
+          <i class="fas fa-lock"></i><span>Encrypt</span>
+        </a>
+      </li>
+      <li>
+        <a class="rail__link" th:href="@{/decrypt}"
+           th:classappend="${#strings.startsWith(currentPath, '/decrypt')} ? 'is-active'">
+          <i class="fas fa-lock-open"></i><span>Decrypt</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="rail__foot">
+    Hybrid RSA + classical ciphers
+  </div>
+</nav>
+
+<!--/* ===================================================================== */-->
+<!--/* topbar                                                               */-->
+<!--/* ===================================================================== */-->
+<header class="topbar" th:fragment="topbar">
+  <!--/*
+    One control for the rail at every width: it collapses the rail on a wide
+    screen and opens it as a drawer on a narrow one.
+
+    It used to live inside the rail head, and collapsing the rail hid it —
+    `.rail.is-collapsed .rail__toggle { display: none }` — so the rail could
+    be collapsed once and never reopened without clearing site data. Found by
+    driving the page in a browser; a status-code check cannot see it.
+  */-->
+  <button id="navToggle" class="topbar__nav" type="button"
+          aria-controls="rail" aria-expanded="true" aria-label="Toggle navigation">
+    <i class="fas fa-bars-staggered"></i>
+  </button>
+
+  <span class="topbar__spacer"></span>
+
+  <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch theme">
+    <i class="fas fa-moon"></i>
+  </button>
+
+  <div th:if="${currentUser != null}" class="whoami">
+    <span class="whoami__name" th:text="'@' + ${currentUser.username}">@user</span>
+    <a class="btn-k btn-k--danger btn-k--sm" th:href="@{/auth/logout}">
+      <i class="fas fa-arrow-right-from-bracket"></i> Sign out
+    </a>
+  </div>
+
+  <a th:if="${currentUser == null}" class="btn-k btn-k--primary btn-k--sm" th:href="@{/auth}">
+    <i class="fas fa-arrow-right-to-bracket"></i> Sign in
+  </a>
+</header>
+
+<!--/* ===================================================================== */-->
+<!--/* scrim — dims the page behind the mobile drawer                        */-->
+<!--/* ===================================================================== */-->
+<div id="scrim" class="scrim" th:fragment="scrim"></div>
+
+<!--/* ===================================================================== */-->
+<!--/* foot                                                                  */-->
+<!--/* ===================================================================== */-->
+<footer class="foot" th:fragment="foot">
+  <p class="mb-1"><strong>Key Distribution Center</strong> — symmetric keys wrapped in RSA, per message</p>
+  <p class="foot__names mb-0">Humbat Jamalov · Asim Gasimov · Yunis Kangarli</p>
+</footer>
+
+<!--/* ===================================================================== */-->
+<!--/* scripts                                                              */-->
+<!--/* ===================================================================== */-->
+<th:block th:fragment="scripts">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script th:src="@{/js/app.js}"></script>
+</th:block>
+
+</body>
+</html>

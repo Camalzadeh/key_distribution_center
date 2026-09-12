@@ -1,112 +1,148 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('Inbox')}"></head>
+<head th:replace="~{fragments/layout :: head('Messages')}"></head>
 <body>
 
-<div class="wrapper">
+<div class="shell">
+  <div th:replace="~{fragments/layout :: rail}"></div>
+  <div th:replace="~{fragments/layout :: scrim}"></div>
 
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+  <div class="main">
+    <div th:replace="~{fragments/layout :: topbar}"></div>
 
-    <div class="main">
-        <div th:replace="~{fragments/navbar :: navbar}"></div>
+    <main class="page rise">
+      <div class="page__head">
+        <span class="page__eyebrow"><i class="fas fa-inbox"></i> Messages</span>
+        <h1 class="page__title">Received and sent</h1>
+        <p class="page__lead">
+          Each message is deciphered for display only. What is stored is the ciphertext and
+          the wrapped symmetric key — open the details on any message to see both as they sit
+          in the database.
+        </p>
+      </div>
 
-        <div class="container-fluid-custom animate-fade-in">
-            <div class="glass-card mb-4">
-                <h2 class="fw-bold mb-0 text-primary"><i class="fas fa-comments me-2"></i> Security Center</h2>
-                <p class="text-muted">Manage your encrypted message history and cryptographic keys.</p>
+      <div class="row g-4">
+        <!-- ===================== received ===================== -->
+        <div class="col-xl-6">
+          <h2 class="section-head">
+            <i class="fas fa-inbox" style="color: var(--accent);"></i>
+            Received
+            <span class="chip chip--ok chip--count" th:text="${#lists.size(receivedMessages)}">0</span>
+          </h2>
+
+          <div th:if="${#lists.isEmpty(receivedMessages)}" class="empty">
+            <i class="fas fa-envelope-open"></i>
+            <p>Nothing received yet.</p>
+          </div>
+
+          <div th:each="msg, stat : ${receivedMessages}" class="msg msg--in">
+            <div class="msg__head">
+              <div class="msg__who">
+                <p class="msg__name" th:text="'@' + ${msg.message.sender.username}">@sender</p>
+                <span class="msg__when"
+                      th:text="${#temporals.format(msg.message.sentAt, 'd MMM yyyy, HH:mm')}">—</span>
+              </div>
+              <span class="chip" th:text="${msg.message.algorithm}">cipher</span>
             </div>
 
-            <!-- RECEIVED MESSAGES -->
-            <div class="row">
-                <div class="col-lg-6">
-                    <h4 class="text-success mb-4 d-flex align-items-center">
-                        <i class="fas fa-inbox me-2"></i> Received Messages
-                        <span class="badge bg-success ms-2 rounded-pill" style="font-size: 0.7rem;" th:text="${#lists.size(receivedMessages)}"></span>
-                    </h4>
-                    
-                    <div th:if="${#lists.isEmpty(receivedMessages)}" class="glass-card text-center py-5">
-                        <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No messages received yet.</p>
-                    </div>
+            <div class="kv__k">Deciphered</div>
+            <div class="msg__body" th:text="${msg.decryptedText}"></div>
 
-                    <div th:each="msg, stat : ${receivedMessages}" class="glass-card mb-3 border-start border-success border-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-0 fw-bold" th:text="${msg.message.sender.username}"></h6>
-                                <small class="text-muted" th:text="${#temporals.format(msg.message.sentAt, 'MMM dd, HH:mm')}"></small>
-                            </div>
-                            <span class="badge bg-light text-dark border" th:text="${msg.message.algorithm}"></span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="small fw-bold text-uppercase opacity-50">Decrypted Message</label>
-                            <p class="mb-0 p-3 bg-light rounded-3 border" th:text="${msg.decryptedText}"></p>
-                        </div>
-                        
-                        <button class="btn btn-sm btn-outline-secondary w-100 mt-2" type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#details-r-' + ${stat.index}">
-                            Show Security Details <i class="fas fa-chevron-down ms-1"></i>
-                        </button>
-                        
-                        <div class="collapse mt-3" th:attr="id='details-r-' + ${stat.index}">
-                            <div class="p-3 bg-dark text-white rounded-3 small font-monospace">
-                                <p class="mb-1 text-warning">// Encrypted Payload</p>
-                                <div class="text-truncate mb-2" th:text="${msg.message.encryptedText}"></div>
-                                <p class="mb-1 text-warning">// Symmetric Key (Encrypted)</p>
-                                <div class="text-truncate" th:text="${msg.message.encryptedSymmetricKey}"></div>
-                            </div>
-                        </div>
-                    </div>
+            <button class="disclose" type="button" data-bs-toggle="collapse"
+                    th:attr="data-bs-target='#det-r-' + ${stat.index},
+                             aria-controls='det-r-' + ${stat.index}"
+                    aria-expanded="false">
+              <i class="fas fa-chevron-down"></i> What is actually stored
+            </button>
+
+            <div class="collapse" th:id="'det-r-' + ${stat.index}">
+              <div class="detail-panel kv">
+                <div>
+                  <div class="kv__k">Cipher · block mode</div>
+                  <div class="code" th:text="${msg.message.algorithm} + ' · ' + ${msg.message.mode}"></div>
                 </div>
-
-                <!-- SENT MESSAGES -->
-                <div class="col-lg-6">
-                    <h4 class="text-primary mb-4 d-flex align-items-center">
-                        <i class="fas fa-paper-plane me-2"></i> Sent Messages
-                        <span class="badge bg-primary ms-2 rounded-pill" style="font-size: 0.7rem;" th:text="${#lists.size(sentMessages)}"></span>
-                    </h4>
-
-                    <div th:if="${#lists.isEmpty(sentMessages)}" class="glass-card text-center py-5">
-                        <i class="fas fa-ghost fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No messages sent yet.</p>
-                    </div>
-
-                    <div th:each="msg, stat : ${sentMessages}" class="glass-card mb-3 border-start border-primary border-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <h6 class="mb-0 fw-bold" th:text="'To: ' + ${msg.message.receiver.username}"></h6>
-                                <small class="text-muted" th:text="${#temporals.format(msg.message.sentAt, 'MMM dd, HH:mm')}"></small>
-                            </div>
-                            <span class="badge bg-light text-dark border" th:text="${msg.message.algorithm}"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="small fw-bold text-uppercase opacity-50">Content Sent</label>
-                            <p class="mb-0 p-3 bg-light rounded-3 border" th:text="${msg.decryptedText}"></p>
-                        </div>
-
-                        <button class="btn btn-sm btn-outline-secondary w-100 mt-2" type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#details-s-' + ${stat.index}">
-                            Show Security Details <i class="fas fa-chevron-down ms-1"></i>
-                        </button>
-
-                        <div class="collapse mt-3" th:attr="id='details-s-' + ${stat.index}">
-                            <div class="p-3 bg-dark text-white rounded-3 small font-monospace">
-                                <p class="mb-1 text-primary">// Encrypted Payload</p>
-                                <div class="text-truncate mb-2" th:text="${msg.message.encryptedText}"></div>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                  <div class="kv__k">Stored ciphertext</div>
+                  <div class="code code--clip" th:text="${msg.message.encryptedText}"></div>
                 </div>
+                <div>
+                  <div class="kv__k">Symmetric key, RSA-wrapped for you</div>
+                  <div class="code code--clip" th:text="${msg.message.encryptedSymmetricKey}"></div>
+                </div>
+                <!--/* The unwrapped key is the point of the whole exercise: it
+                       exists in the clear only here, after your private key has
+                       opened it, and never in storage. */-->
+                <div>
+                  <div class="kv__k">Unwrapped with your private key</div>
+                  <div class="code code--ok" th:text="${msg.decryptedKey}"></div>
+                </div>
+              </div>
             </div>
-
-            <footer class="mt-5 text-center">
-                <p class="mb-0">Secure Key Distribution & Messaging</p>
-                <small>Humbat Jamalov | Asim Gasimov | Yunis Kangarli</small>
-            </footer>
+          </div>
         </div>
-    </div>
+
+        <!-- ===================== sent ===================== -->
+        <div class="col-xl-6">
+          <h2 class="section-head">
+            <i class="fas fa-paper-plane" style="color: var(--primary);"></i>
+            Sent
+            <span class="chip chip--primary chip--count" th:text="${#lists.size(sentMessages)}">0</span>
+          </h2>
+
+          <div th:if="${#lists.isEmpty(sentMessages)}" class="empty">
+            <i class="fas fa-paper-plane"></i>
+            <p>Nothing sent yet.</p>
+          </div>
+
+          <div th:each="msg, stat : ${sentMessages}" class="msg msg--out">
+            <div class="msg__head">
+              <div class="msg__who">
+                <p class="msg__name" th:text="'to @' + ${msg.message.receiver.username}">to @recipient</p>
+                <span class="msg__when"
+                      th:text="${#temporals.format(msg.message.sentAt, 'd MMM yyyy, HH:mm')}">—</span>
+              </div>
+              <span class="chip" th:text="${msg.message.algorithm}">cipher</span>
+            </div>
+
+            <div class="kv__k">What you wrote</div>
+            <div class="msg__body" th:text="${msg.decryptedText}"></div>
+
+            <button class="disclose" type="button" data-bs-toggle="collapse"
+                    th:attr="data-bs-target='#det-s-' + ${stat.index},
+                             aria-controls='det-s-' + ${stat.index}"
+                    aria-expanded="false">
+              <i class="fas fa-chevron-down"></i> What is actually stored
+            </button>
+
+            <div class="collapse" th:id="'det-s-' + ${stat.index}">
+              <div class="detail-panel kv">
+                <div>
+                  <div class="kv__k">Cipher · block mode</div>
+                  <div class="code" th:text="${msg.message.algorithm} + ' · ' + ${msg.message.mode}"></div>
+                </div>
+                <div>
+                  <div class="kv__k">Stored ciphertext</div>
+                  <div class="code code--clip" th:text="${msg.message.encryptedText}"></div>
+                </div>
+                <div>
+                  <div class="kv__k">Symmetric key, RSA-wrapped for the recipient</div>
+                  <div class="code code--clip" th:text="${msg.message.encryptedSymmetricKey}"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a class="btn-k btn-k--primary mt-4" th:href="@{/message}">
+        <i class="fas fa-paper-plane"></i> Compose a message
+      </a>
+
+      <div th:replace="~{fragments/layout :: foot}"></div>
+    </main>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/index.js"></script>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>
 </html>

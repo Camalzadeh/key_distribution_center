@@ -1,72 +1,194 @@
 <!DOCTYPE html>
+<!--/*
+  The signed-in landing page: your RSA key pair, and what happens to it.
+
+  This file used to contain two complete documents — a stray <!DOCTYPE>,
+  <html>, <head> and <body> at the top, then the whole set again — plus two
+  copies of the closing script tags. Browsers recovered from it, which is why
+  it was never noticed, but the head fragment was resolved twice on every
+  request and the second </html> put stray markup after the document end.
+*/-->
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/head :: head('WeCrypt')"></head>
+<head th:replace="~{fragments/layout :: head('Keys')}"></head>
 <body>
 
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('WeCrypt')}"></head>
-<body>
+<div class="shell">
+  <div th:replace="~{fragments/layout :: rail}"></div>
+  <div th:replace="~{fragments/layout :: scrim}"></div>
 
-<div class="wrapper">
+  <div class="main">
+    <div th:replace="~{fragments/layout :: topbar}"></div>
 
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <main class="page rise">
 
-    <div class="main">
-
-        <div th:replace="~{fragments/navbar :: navbar}"></div>
-
-        <div class="container-fluid-custom animate-fade-in">
-            <div class="glass-card mb-5">
-                <h1 class="display-4 fw-bold" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">WeCrypt Dashboard</h1>
-                <p class="lead opacity-75">Secure end-to-end communication and cryptographic tools.</p>
-            </div>
-
-            <div th:if="${currentUser != null}" class="row">
-                <div class="col-md-6">
-                    <div class="glass-card h-100">
-                        <h4 class="text-success mb-4"><i class="fas fa-shield-halved me-2"></i> Public Key</h4>
-                        <div class="mb-3">
-                            <p class="small text-muted mb-2">Use this key to let others encrypt messages for you.</p>
-                            <pre th:text="${currentUser.publicKey}"></pre>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="glass-card h-100 border-danger border-opacity-25">
-                        <h4 class="text-danger mb-4"><i class="fas fa-key me-2"></i> Private Key</h4>
-                        <div class="mb-3">
-                            <p class="small text-muted mb-2">This key should never be shared! It is used to decrypt your messages.</p>
-                            <pre class="text-danger" th:text="${currentUser.privateKey}"></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div th:if="${currentUser == null}" class="glass-card text-center py-5 mt-5">
-                <i class="fas fa-user-lock fa-4x text-primary mb-4"></i>
-                <h3>Welcome to WeCrypt</h3>
-                <p class="text-muted">Please login or register to access your secure keys and messaging.</p>
-                <a th:href="@{/auth}" class="btn btn-primary mt-3 px-5 py-3 rounded-pill fw-bold">Get Started</a>
-            </div>
-
-            <footer class="mt-5 text-center">
-                <p class="mb-0">Designed for Secure Communication</p>
-                <small>Humbat Jamalov | Asim Gasimov | Yunis Kangarli</small>
-            </footer>
+      <!-- ================= signed out ================= -->
+      <div th:if="${currentUser == null}">
+        <div class="page__head">
+          <span class="page__eyebrow"><i class="fas fa-key"></i> Key distribution</span>
+          <h1 class="page__title">Messages nobody in the middle can read</h1>
+          <p class="page__lead">
+            Every account gets an RSA key pair. A message is enciphered with a symmetric key
+            you choose, and that key is then wrapped with the recipient's public key — so the
+            key travels with the message and only its owner can unwrap it.
+          </p>
         </div>
 
-    </div>
+        <div class="card-k card-k--accent card-k--pad-lg">
+          <div class="row g-4 align-items-center">
+            <div class="col-lg-7">
+              <h2 class="card-k__title mb-2" style="font-size:1.1rem;">Sign in to see your key pair</h2>
+              <p class="card-k__sub mb-4" style="font-size:0.9rem;">
+                One form does both: a username that does not exist yet is registered, and its
+                key pair is generated on the spot.
+              </p>
+              <a class="btn-k btn-k--primary btn-k--lg" th:href="@{/auth}">
+                <i class="fas fa-arrow-right-to-bracket"></i> Get started
+              </a>
+            </div>
+            <div class="col-lg-5">
+              <div class="kv">
+                <div>
+                  <div class="kv__k">1 — Symmetric pass</div>
+                  <div class="code">Caesar · Vigenère · Playfair · Rail Fence</div>
+                </div>
+                <div>
+                  <div class="kv__k">2 — Key wrapping</div>
+                  <div class="code">RSA( symmetric key, recipient public key )</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= signed in ================= -->
+      <div th:if="${currentUser != null}">
+        <div class="page__head">
+          <span class="page__eyebrow"><i class="fas fa-fingerprint"></i> Your key pair</span>
+          <h1 class="page__title">Keys</h1>
+          <p class="page__lead">
+            Share the public half freely — it is what others need in order to send you
+            something. The private half stays here.
+          </p>
+        </div>
+
+        <div class="row g-4">
+          <!-- public -->
+          <div class="col-lg-6">
+            <div class="card-k card-k--ok h-100">
+              <div class="card-k__head">
+                <span class="card-k__icon card-k__icon--ok"><i class="fas fa-share-nodes"></i></span>
+                <div>
+                  <h2 class="card-k__title">Public key</h2>
+                  <p class="card-k__sub">Safe to publish</p>
+                </div>
+              </div>
+
+              <div class="code-block">
+                <pre id="publicKey" class="code code--clip" th:text="${currentUser.publicKey}"></pre>
+                <button class="copy" type="button" data-copy="#publicKey" data-label="Copy">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+              </div>
+
+              <p class="field__hint">
+                Anyone holding this can wrap a symmetric key for you. It cannot be used to
+                read anything.
+              </p>
+            </div>
+          </div>
+
+          <!-- private -->
+          <div class="col-lg-6">
+            <div class="card-k card-k--danger h-100">
+              <div class="card-k__head">
+                <span class="card-k__icon card-k__icon--danger"><i class="fas fa-user-secret"></i></span>
+                <div>
+                  <h2 class="card-k__title">Private key</h2>
+                  <p class="card-k__sub">Never share this</p>
+                </div>
+              </div>
+
+              <!--/*
+                Collapsed by default. The old dashboard printed the private key
+                in full the moment the page loaded, which put it on screen in
+                every screen-share and every shoulder-glance for no reason —
+                nothing on this page needs it visible.
+              */-->
+              <button class="disclose" type="button" data-bs-toggle="collapse"
+                      data-bs-target="#privateKeyReveal" aria-expanded="false"
+                      aria-controls="privateKeyReveal">
+                <i class="fas fa-chevron-down"></i> Reveal private key
+              </button>
+
+              <div class="collapse" id="privateKeyReveal">
+                <div class="code-block mt-3">
+                  <pre id="privateKey" class="code code--danger code--clip"
+                       th:text="${currentUser.privateKey}"></pre>
+                  <button class="copy" type="button" data-copy="#privateKey" data-label="Copy">
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                </div>
+              </div>
+
+              <p class="field__hint">
+                Used to unwrap the symmetric key of every message sent to you. Whoever has it
+                can read your entire inbox.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- what happens when you send -->
+        <div class="card-k mt-4">
+          <div class="card-k__head">
+            <span class="card-k__icon"><i class="fas fa-diagram-project"></i></span>
+            <div>
+              <h2 class="card-k__title">What happens when you send a message</h2>
+              <p class="card-k__sub">Four steps, and the third is the one that matters</p>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="kv__k">1 — Choose</div>
+              <div class="code">cipher + symmetric key</div>
+            </div>
+            <div class="col-md-3">
+              <div class="kv__k">2 — Encipher</div>
+              <div class="code">ciphertext = E(text, key)</div>
+            </div>
+            <div class="col-md-3">
+              <div class="kv__k">3 — Wrap</div>
+              <div class="code code--ok">RSA(key, their public)</div>
+            </div>
+            <div class="col-md-3">
+              <div class="kv__k">4 — Store</div>
+              <div class="code">both, never the key alone</div>
+            </div>
+          </div>
+
+          <p class="field__hint mt-3 mb-0">
+            The symmetric key is never written down in the clear. The recipient unwraps it with
+            their private key, then deciphers the payload with it.
+          </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <a class="btn-k btn-k--primary" th:href="@{/message}">
+            <i class="fas fa-paper-plane"></i> Compose a message
+          </a>
+          <a class="btn-k btn-k--ghost" th:href="@{/inbox}">
+            <i class="fas fa-inbox"></i> Open messages
+          </a>
+        </div>
+      </div>
+
+      <div th:replace="~{fragments/layout :: foot}"></div>
+    </main>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/index.js"></script>
-</body>
-</html>
-
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/index.js"></script>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>
 </html>

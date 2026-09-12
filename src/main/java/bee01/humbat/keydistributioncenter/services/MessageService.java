@@ -1,5 +1,6 @@
 package bee01.humbat.keydistributioncenter.services;
 
+import bee01.humbat.keydistributioncenter.cryptography.CipherText;
 import bee01.humbat.keydistributioncenter.cryptography.CryptEngine;
 import bee01.humbat.keydistributioncenter.cryptography.ciphers.RsaCipher;
 import bee01.humbat.keydistributioncenter.cryptography.enums.Algorithm;
@@ -19,11 +20,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.logging.Logger;
 
 @Service
 public class MessageService {
-    private static final Logger logger = Logger.getLogger(MessageService.class.getName());
 
     private final MessageRepository repo;
     private final UserService userService;
@@ -34,102 +33,61 @@ public class MessageService {
     }
 
     public Message toMessage(MessageDTO dto) {
-        logger.info("Starting to convert MessageDTO to Message entity...");
-
         Message message = new Message();
-
-        String rawAlgo = dto.algorithm();
-        String rawMode = dto.mode();
-        String rawKey = dto.key();
-        logger.info("Received algorithm: " + rawAlgo);
-        logger.info("Received mode: " + rawMode);
-        logger.info("Received symmetric key: " + rawKey);
 
         User from = dto.from();
         User to = userService.findById(dto.to());
-        logger.info("Sender: " + from.getUsername());
-        logger.info("Receiver: " + to.getUsername());
 
-        Algorithm algo = Algorithm.getAlgorithm(rawAlgo);
-        Mode mode = Mode.getMode(rawMode);
-        Key key = Key.giveKey(rawKey, algo);
-        String text = dto.text();
+        Algorithm algo = Algorithm.getAlgorithm(dto.algorithm());
+        Mode mode = Mode.getMode(dto.mode());
+        Key key = Key.giveKey(dto.key(), algo);
 
-        logger.info("Algorithm object resolved: " + algo);
-        logger.info("Mode object resolved: " + mode);
-        logger.info("Plaintext to encrypt: " + text);
+        ConfigPojo config = new ConfigPojo(new KeyPojo(algo, key), new ModePojo(mode));
 
-        KeyPojo keyPojo = new KeyPojo(algo, key);
-        ModePojo modePojo = new ModePojo(mode);
-        ConfigPojo config = new ConfigPojo(keyPojo, modePojo);
-
-        logger.info("ConfigPojo created successfully");
-
-        AsymmetricKey publicKey = new AsymmetricKey(to.getPublicKey());
-        logger.info("Public key of receiver loaded");
-
-        RsaCipher rsaCipher = new RsaCipher(publicKey);
-        CryptEngine<RsaCipher> keyEngine = new CryptEngine<>(rsaCipher);
-        String encryptedKey = keyEngine.encrypt(key.toString());
-        logger.info("Symmetric key encrypted with RSA");
-        logger.info("Encrypted symmetric key (RSA): " + encryptedKey);
-
-        logger.info("Symmetric key encrypted with RSA");
+        // The symmetric key is wrapped with the recipient's public key, so only
+        // they can unwrap it. RsaCipher already returns Base64, which is safe
+        // to store as text.
+        RsaCipher rsaCipher = new RsaCipher(new AsymmetricKey(to.getPublicKey()));
+        String encryptedKey = new CryptEngine<>(rsaCipher).encrypt(key.toString());
 
         CryptEngine<?> textEngine = new CryptEngine<>(config);
-        String encryptedText = textEngine.encrypt(text);
-        logger.info("Text encrypted with symmetric algorithm");
-        logger.info("Encrypted message text: " + encryptedText);
-        logger.info("Text encrypted with symmetric algorithm");
-
+        String encryptedText = textEngine.encrypt(dto.text());
 
         message.setSender(from);
         message.setReceiver(to);
         message.setEncryptedSymmetricKey(encryptedKey);
-        message.setEncryptedText(encryptedText);
+        // Encoded, not stored raw: the classical ciphers can emit U+0000, and
+        // PostgreSQL cannot hold a NUL in a text column. See CipherText.
+        message.setEncryptedText(CipherText.store(encryptedText));
         message.setAlgorithm(algo.name());
         message.setMode(mode.name());
         message.setSentAt(LocalDateTime.now());
-
-        logger.info("Message object fully built and ready to be saved.");
 
         return message;
     }
 
     public DecryptedMessageDTO toDecryptedMessageDTO(Message message) {
-        logger.info("Starting to decrypt message with ID: " + message.getId());
-
-        String encryptedSymmetricKey = message.getEncryptedSymmetricKey();
-        String encryptedText = message.getEncryptedText();
-        String algoName = message.getAlgorithm();
-        String modeName = message.getMode();
-
-        User receiver = message.getReceiver();
-        AsymmetricKey privateKey = new AsymmetricKey(receiver.getPrivateKey());
-        logger.info("Private key of receiver loaded");
+        // Nothing here is logged, deliberately. This method handles the
+        // recipient's private key, the unwrapped symmetric key and the
+        // plaintext; every one of those used to be written to the container
+        // log at INFO level, which put the contents of every message on disk
+        // and into the configuration backups.
+        AsymmetricKey privateKey = new AsymmetricKey(message.getReceiver().getPrivateKey());
 
         RsaCipher rsaCipher = new RsaCipher(privateKey);
-        CryptEngine<RsaCipher> keyEngine = new CryptEngine<>(rsaCipher);
-        String rawSymmetricKey = keyEngine.decrypt(encryptedSymmetricKey);
-        logger.info("Decrypted symmetric key: " + rawSymmetricKey);
+        String rawSymmetricKey = new CryptEngine<>(rsaCipher)
+                .decrypt(message.getEncryptedSymmetricKey());
 
-        Algorithm algo = Algorithm.getAlgorithm(algoName);
-        Mode mode = Mode.getMode(modeName);
+        Algorithm algo = Algorithm.getAlgorithm(message.getAlgorithm());
+        Mode mode = Mode.getMode(message.getMode());
         Key key = Key.giveKey(rawSymmetricKey, algo);
 
-        KeyPojo keyPojo = new KeyPojo(algo, key);
-        ModePojo modePojo = new ModePojo(mode);
-        ConfigPojo config = new ConfigPojo(keyPojo, modePojo);
+        ConfigPojo config = new ConfigPojo(new KeyPojo(algo, key), new ModePojo(mode));
 
         CryptEngine<?> textEngine = new CryptEngine<>(config);
-        String plainText = textEngine.decrypt(encryptedText);
-        logger.info("Decrypted text: " + plainText);
+        String plainText = textEngine.decrypt(CipherText.load(message.getEncryptedText()));
 
-        return new DecryptedMessageDTO(
-                message,
-                plainText,
-                rawSymmetricKey
-        );
+        return new DecryptedMessageDTO(message, plainText, rawSymmetricKey);
     }
 
 

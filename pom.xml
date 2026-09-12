@@ -34,6 +34,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+        <!-- Health endpoint. With data-jpa on the classpath its health
+             indicator validates a pooled connection, so UP means the database
+             answered rather than merely that the JVM is up. The image's
+             HEALTHCHECK reads it; see application.properties for why it
+             listens on its own loopback-only port. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>

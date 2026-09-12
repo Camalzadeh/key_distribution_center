@@ -25,9 +25,16 @@ public class SessionFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
 
+        // /actuator is served on its own port and therefore in a child
+        // context this filter is not registered in. It is listed anyway: if
+        // the management port is ever folded back onto the main one, the
+        // health probe would otherwise be answered with a redirect to /auth
+        // and the container would never report healthy.
         return path.startsWith("/auth") || path.startsWith("/error") ||
+                path.startsWith("/actuator") ||
                 path.startsWith("/static") || path.startsWith("/css") ||
-                path.startsWith("/js") || path.startsWith("/images");
+                path.startsWith("/js") || path.startsWith("/images") ||
+                path.equals("/favicon.ico");
     }
 
     @Override

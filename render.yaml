@@ -1,35 +1,48 @@
+# Render blueprint — an alternative host, kept for reference.
+#
+# This is not the maintained deployment path. The application is deployed from
+# a prebuilt image published by .github/workflows/image.yml, and the runtime
+# configuration lives with that deployment rather than in this repository.
+#
+# ⚠️ Known limitation, unchanged from when this file was written: Render does
+# not expand ${DB_HOST} inside another env var's `value`, so the
+# SPRING_DATASOURCE_URL below arrives at the application with the placeholders
+# still in it. Building the URL from parts needs either a startup script or a
+# property that composes it. Left as-is rather than half-fixed, because
+# nothing currently runs it.
+
 services:
   - type: web
-    name: wecrypt-app
+    name: kdc-app
     runtime: docker
     plan: free
     envVars:
       - key: DB_HOST
         fromDatabase:
-          name: wecrypt-db
+          name: kdc-db
           property: host
       - key: DB_PORT
         fromDatabase:
-          name: wecrypt-db
+          name: kdc-db
           property: port
       - key: DB_NAME
         fromDatabase:
-          name: wecrypt-db
+          name: kdc-db
           property: database
       - key: SPRING_DATASOURCE_URL
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
-          name: wecrypt-db
+          name: kdc-db
           property: user
       - key: SPRING_DATASOURCE_PASSWORD
         fromDatabase:
-          name: wecrypt-db
+          name: kdc-db
           property: password
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
 
 databases:
-  - name: wecrypt-db
+  - name: kdc-db
     plan: free
     databaseName: kdc

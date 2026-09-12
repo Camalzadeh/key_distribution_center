@@ -1,0 +1,61 @@
+# =============================================================================
+# Docker build context exclusions.
+#
+# .gitignore does NOT apply here. Anything not excluded below is uploaded to
+# the daemon and can be captured by a careless COPY — and once it is baked
+# into a published layer, deleting the file in a later layer does not remove
+# it. A published image carrying a credential cannot be un-published.
+#
+# The entries in the first block are the reason this file exists. Do not
+# remove them, and add any new secret location here at the same time as you
+# create it. The image workflow also asserts their absence inside the built
+# image, so a mistake here fails the build rather than shipping.
+# =============================================================================
+
+# --- secrets: never in an image ----------------------------------------------
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+*.pem
+*.p12
+*.jks
+*.keystore
+src/main/resources/keys/
+secrets/
+
+# --- version control and tooling ---------------------------------------------
+.git/
+.github/
+.gitignore
+.gitattributes
+.dockerignore
+.idea/
+.vscode/
+*.iml
+
+# --- build output: the image builds its own ----------------------------------
+# Copying a host-built target/ in would shadow the one produced inside the
+# build stage, so the image could ship a jar compiled from different sources
+# than the ones in the context.
+target/
+build/
+out/
+bin/
+
+# --- not part of the runtime image -------------------------------------------
+docs/
+*.md
+docker-compose.yml
+compose*.yml
+render.yaml
+
+# --- editor leftovers and stray archives -------------------------------------
+*~
+*.orig
+*.rej
+*.zip
+*.log
+.DS_Store
+Thumbs.db

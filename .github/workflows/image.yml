@@ -1,0 +1,279 @@
+name: Image
+
+# Builds and publishes the container image. The build happens here rather than
+# wherever the application runs, because compiling a Spring Boot application
+# needs a JDK, Maven and a few hundred megabytes of dependency cache — none of
+# which a small host should be spending memory on. Whatever runs the
+# application only ever pulls a finished image.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "pom.xml"
+      - "mvnw"
+      - ".mvn/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/image.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "pom.xml"
+      - "mvnw"
+      - ".mvn/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/image.yml"
+
+  # Releasing is a separate, deliberate act from building.
+  #
+  # A push to main moves `latest`. Only a run started here with release=true
+  # moves `prod`. That separation exists because Hibernate applies the schema
+  # when the container starts (ddl-auto=update), so an automatic deployment of
+  # every commit would also be an automatic, unreviewed schema change — and a
+  # schema change is the one step that cannot be undone by putting the old
+  # image back.
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Also move the prod tag (a puller following :prod will deploy this)"
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/kdc
+
+jobs:
+  # ===========================================================================
+  # test
+  # ===========================================================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Match the major version the application actually runs against.
+        image: postgres:18
+        env:
+          POSTGRES_DB: kdc_test
+          POSTGRES_USER: kdc_test
+          POSTGRES_PASSWORD: kdc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kdc_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      # The suite is currently one @SpringBootTest that loads the context,
+      # which still needs a reachable database: without one it fails at
+      # DataSource initialisation. A real database is also the only way that
+      # test says anything about the JPA mappings.
+      - name: Run the test suite
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/kdc_test
+          SPRING_DATASOURCE_USERNAME: kdc_test
+          SPRING_DATASOURCE_PASSWORD: kdc_test
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+        run: ./mvnw -B --no-transfer-progress verify
+
+  # ===========================================================================
+  # build
+  # ===========================================================================
+  build:
+    name: Build & Push
+    needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    services:
+      # Used by the smoke test below, not by the build.
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: kdc_smoke
+          POSTGRES_USER: kdc_smoke
+          POSTGRES_PASSWORD: kdc_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kdc_smoke"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # ghcr.io rejects uppercase in a repository name, and
+      # github.repository_owner preserves whatever case the account uses.
+      - name: Normalise the image name
+        id: img
+        run: |
+          echo "name=$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ steps.img.outputs.name }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The assertions live in .github/assert-image.sh so they can be run by
+      # hand against a local build, and because inlining them here meant
+      # nesting quotes inside `sh -c` until the script stopped parsing.
+      #
+      # Fed over stdin rather than copied in: .github/ is excluded from the
+      # build context, so the script never becomes part of the image it is
+      # checking.
+      - name: Assert nothing secret is in the image
+        run: |
+          docker run --rm -i --entrypoint sh ${{ steps.img.outputs.name }}:ci -s             < .github/assert-image.sh
+
+      # -----------------------------------------------------------------------
+      # Start the image against a real PostgreSQL and wait for the container's
+      # own healthcheck to pass. That covers strictly more than the unit test
+      # does: the Spring context loads inside the actual image, Hibernate
+      # applies its schema to an empty database, and the health endpoint
+      # checks out a live connection.
+      #
+      # --network host so the container can reach the service container, which
+      # is published on the runner's loopback interface.
+      # -----------------------------------------------------------------------
+      - name: Smoke test the image
+        run: |
+          set -euo pipefail
+
+          docker run -d --name smoke --network host \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/kdc_smoke \
+            -e SPRING_DATASOURCE_USERNAME=kdc_smoke \
+            -e SPRING_DATASOURCE_PASSWORD=kdc_smoke \
+            -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
+            ${{ steps.img.outputs.name }}:ci
+
+          echo "waiting for the container to report healthy"
+          for i in $(seq 1 40); do
+            state=$(docker inspect -f '{{.State.Status}}' smoke)
+            health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' smoke)
+            echo "  ${i}: ${state}/${health}"
+
+            if [ "$state" = "exited" ]; then
+              echo "the container exited during start-up:"
+              docker logs --tail 80 smoke
+              exit 1
+            fi
+            [ "$health" = "healthy" ] && break
+            sleep 5
+          done
+
+          if [ "$(docker inspect -f '{{.State.Health.Status}}' smoke)" != "healthy" ]; then
+            echo "never became healthy:"
+            docker logs --tail 120 smoke
+            exit 1
+          fi
+
+          # The sign-in page is the one route that answers without a session,
+          # and it renders a Thymeleaf template — so a 200 here also proves
+          # the templates resolve, which a health check does not.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 http://127.0.0.1:8080/auth)
+          echo "GET /auth -> ${code}"
+          [ "$code" = "200" ] || { docker logs --tail 120 smoke; exit 1; }
+
+          # A request without a cookie must be turned away rather than served.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 http://127.0.0.1:8080/inbox)
+          echo "GET /inbox (no session) -> ${code}"
+          case "$code" in
+            30*) ;;
+            *) echo "expected a redirect to the sign-in page"; docker logs --tail 60 smoke; exit 1 ;;
+          esac
+
+          # The actuator port is bound to loopback inside the container and is
+          # never proxied. Confirm it says UP and nothing more than UP: the
+          # response must not name components or carry a database URL.
+          body=$(curl -sS --max-time 10 http://127.0.0.1:8081/actuator/health)
+          echo "health -> ${body}"
+          echo "$body" | grep -q '"status":"UP"' || exit 1
+          if echo "$body" | grep -q "jdbc:"; then
+            echo "FAIL: the health response leaks the datasource URL"
+            exit 1
+          fi
+
+          echo "smoke test passed"
+
+      - name: Container log (on failure)
+        if: failure()
+        run: docker logs --tail 200 smoke || true
+
+      - name: Log in to the registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags and labels
+        id: meta
+        if: github.event_name != 'pull_request'
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.img.outputs.name }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+            type=raw,value=prod,enable=${{ inputs.release == true }}
+
+      - name: Push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "### Pushed"
+            echo ""
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+            echo ""
+            if [ "${{ inputs.release }}" = "true" ]; then
+              echo "**\`prod\` moved.** Anything following that tag will pick this up."
+            else
+              echo "\`prod\` was **not** moved, so this does not reach production."
+              echo "To release: run this workflow manually with \`release=true\`."
+            fi
+            echo ""
+            echo "Roll back by pointing \`prod\` at an earlier \`sha-\` tag."
+          } >> "$GITHUB_STEP_SUMMARY"
